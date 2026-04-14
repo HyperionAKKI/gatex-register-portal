@@ -1,6 +1,6 @@
-# Student Registration Portal
+# GateX Registration Portal
 
-This repository contains the complete full-stack architecture for a digital Student Registration Portal with real-time UI facial alignment detection.
+This repository contains the complete full-stack architecture for a digital GateX Registration Portal with real-time UI facial alignment detection.
 
 ## Architecture Let-Down
 - **Frontend**: React, Vite, Tailwind CSS, shadcn/ui, face-api.js
@@ -14,7 +14,7 @@ This repository contains the complete full-stack architecture for a digital Stud
 
 ### Database
 1. Make sure PostgreSQL is running locally (`port 5432`).
-2. Create a database named `student_db`.
+2. Create a database named `student_db` (or `gatex_db`).
 3. Spring Boot will automatically manage schema generation during local testing running due to `spring.jpa.hibernate.ddl-auto=update`, or you can run `database/schema.sql` manually.
 
 ### Backend Setup (Spring Boot)
