@@ -8,9 +8,9 @@ const POSE_STEPS = [
   { label: "Front Face", instruction: "Look straight at the camera" },
   { label: "Left Side", instruction: "Turn your face to show your left side" },
   { label: "Right Side", instruction: "Turn your face to show your right side" },
-  { label: "Slight Left Angle", instruction: "Tilt your head slightly to the left" },
-  { label: "Slight Right Angle", instruction: "Tilt your head slightly to the right" },
-  { label: "Upward / Downward", instruction: "Tilt your head slightly up or down" },
+  { label: "Face Upward", instruction: "Tilt your head Up" },
+  { label: "Face Downward", instruction: "Tilt your head down" },
+  { label: "Face Close-Up", instruction: "Come closer to camera" },
 ] as const;
 
 interface MultiFaceCaptureProps {
@@ -210,9 +210,8 @@ const MultiFaceCapture = ({ photos, onPhotosChange }: MultiFaceCaptureProps) => 
                 key={i}
                 type="button"
                 onClick={() => { setCurrentStep(i); setIsFaceAligned(false); }}
-                className={`relative flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md border text-[10px] transition-all ${
-                  i === currentStep ? "border-primary ring-2 ring-primary/30" : p ? "border-green-400" : "border-muted bg-muted/50"
-                }`}
+                className={`relative flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md border text-[10px] transition-all ${i === currentStep ? "border-primary ring-2 ring-primary/30" : p ? "border-green-400" : "border-muted bg-muted/50"
+                  }`}
               >
                 {p ? <img src={p} alt="" className="h-full w-full rounded-md object-cover" /> : <span className="text-muted-foreground">{i + 1}</span>}
                 {p && <Check className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full bg-green-500 p-0.5 text-white" />}
