@@ -1,31 +1,48 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, X, CheckCircle, Camera, Loader2 } from "lucide-react";
+import { Upload, X, CheckCircle, Camera, Loader2, SwitchCamera, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+
+export interface BadUniformPhotos {
+  missingTie: string | null;
+  missingBelt: string | null;
+  missingIdCard: string | null;
+}
+
+const BAD_UNIFORM_STEPS = [
+  { key: "missingTie" as const, label: "Missing Tie", instruction: "Take a full-body photo showing the student WITHOUT a tie" },
+  { key: "missingBelt" as const, label: "Missing Belt", instruction: "Take a full-body photo showing the student WITHOUT a belt" },
+  { key: "missingIdCard" as const, label: "Missing ID Card", instruction: "Take a full-body photo showing the student WITHOUT an ID card" },
+];
 
 interface UniformUploadSectionProps {
   goodUniform: string | null;
-  badUniform: string | null;
+  badUniformPhotos: BadUniformPhotos;
   onGoodUniformChange: (img: string | null) => void;
-  onBadUniformChange: (img: string | null) => void;
+  onBadUniformPhotosChange: (photos: BadUniformPhotos) => void;
   errors?: { goodUniform?: string; badUniform?: string };
 }
 
 const UniformUploadSection = ({
   goodUniform,
-  badUniform,
+  badUniformPhotos,
   onGoodUniformChange,
-  onBadUniformChange,
+  onBadUniformPhotosChange,
   errors,
 }: UniformUploadSectionProps) => {
   const goodRef = useRef<HTMLInputElement>(null);
-  const badRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const [cameraTarget, setCameraTarget] = useState<"good" | "bad" | null>(null);
+  // Camera state
+  const [cameraTarget, setCameraTarget] = useState<"good" | "missingTie" | "missingBelt" | "missingIdCard" | null>(null);
   const [cameraLoading, setCameraLoading] = useState(false);
   const [streamReady, setStreamReady] = useState(false);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
+
+  // Bad uniform dropdown
+  const [selectedBadStep, setSelectedBadStep] = useState<string>("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -45,16 +62,16 @@ const UniformUploadSection = ({
     }
   }, [streamReady, cameraTarget]);
 
-  const openCamera = useCallback(async (target: "good" | "bad") => {
+  const openCamera = useCallback(async (target: "good" | "missingTie" | "missingBelt" | "missingIdCard", mode?: "user" | "environment") => {
     setCameraLoading(true);
     setCameraTarget(target);
     setStreamReady(false);
+    const useMode = mode || facingMode;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 720 }, height: { ideal: 960 } },
+        video: { facingMode: useMode, width: { ideal: 720 }, height: { ideal: 960 } },
       });
       streamRef.current = stream;
-      // Wait a tick for video element to mount, then attach
       requestAnimationFrame(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -68,7 +85,19 @@ const UniformUploadSection = ({
       setCameraTarget(null);
       setCameraLoading(false);
     }
-  }, []);
+  }, [facingMode]);
+
+  const switchCamera = useCallback(() => {
+    const newMode = facingMode === "user" ? "environment" : "user";
+    setFacingMode(newMode);
+    if (cameraTarget) {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+      setStreamReady(false);
+      setCameraLoading(true);
+      setTimeout(() => openCamera(cameraTarget, newMode), 100);
+    }
+  }, [facingMode, cameraTarget, openCamera]);
 
   const capturePhoto = useCallback(() => {
     if (!videoRef.current || !cameraTarget) return;
@@ -82,11 +111,14 @@ const UniformUploadSection = ({
       onGoodUniformChange(dataUrl);
       toast.success("Proper uniform photo captured!");
     } else {
-      onBadUniformChange(dataUrl);
-      toast.success("Improper uniform photo captured!");
+      // It's one of the bad uniform steps
+      const updatedPhotos = { ...badUniformPhotos, [cameraTarget]: dataUrl };
+      onBadUniformPhotosChange(updatedPhotos);
+      const stepLabel = BAD_UNIFORM_STEPS.find(s => s.key === cameraTarget)?.label || "";
+      toast.success(`${stepLabel} photo captured!`);
     }
     stopCamera();
-  }, [cameraTarget, onGoodUniformChange, onBadUniformChange, stopCamera]);
+  }, [cameraTarget, onGoodUniformChange, onBadUniformPhotosChange, badUniformPhotos, stopCamera]);
 
   const handleUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -112,77 +144,24 @@ const UniformUploadSection = ({
     e.target.value = "";
   };
 
-  const renderCard = (
-    type: "good" | "bad",
-    image: string | null,
-    setter: (img: string | null) => void,
-    fileRef: React.RefObject<HTMLInputElement>,
-    label: string,
-    sublabel: string,
-    badgeColor: string,
-    error?: string
-  ) => (
-    <div className="space-y-2">
-      <label className="text-xs font-medium text-foreground">{label}</label>
-      <p className="text-[11px] text-muted-foreground leading-relaxed">{sublabel}</p>
-      {image ? (
-        <div className="group relative">
-          <img
-            src={image}
-            alt={label}
-            className="aspect-[3/4] w-full rounded-lg border object-cover shadow-sm"
-          />
-          <div className={`absolute left-2 top-2 flex items-center gap-1 rounded-full ${badgeColor} px-2 py-0.5 text-[10px] font-medium text-white`}>
-            <CheckCircle className="h-3 w-3" /> Uploaded
-          </div>
-          <button
-            type="button"
-            onClick={() => setter(null)}
-            className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white opacity-100 sm:opacity-0 transition-opacity group-hover:opacity-100"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      ) : (
-        <div
-          className={`flex aspect-[3/4] w-full flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed transition-colors ${
-            error ? "border-destructive" : "border-muted"
-          }`}
-        >
-          <Upload className="h-6 w-6 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground text-center px-2">Capture or upload a full body photo</span>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs h-8"
-              onClick={() => openCamera(type)}
-            >
-              <Camera className="h-3.5 w-3.5" /> Capture
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs h-8"
-              onClick={() => fileRef.current?.click()}
-            >
-              <Upload className="h-3.5 w-3.5" /> Upload
-            </Button>
-          </div>
-        </div>
-      )}
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => handleUpload(e, setter, label)}
-      />
-      {error && <p className="text-xs text-destructive">{error}</p>}
-    </div>
-  );
+  const getCameraInstruction = () => {
+    if (cameraTarget === "good") return "Stand back to show full body in complete uniform";
+    const step = BAD_UNIFORM_STEPS.find(s => s.key === cameraTarget);
+    return step?.instruction || "Stand back to show full body";
+  };
+
+  const badPhotosCompleted = [badUniformPhotos.missingTie, badUniformPhotos.missingBelt, badUniformPhotos.missingIdCard].filter(Boolean).length;
+  const allBadDone = badPhotosCompleted === 3;
+
+  const handleBadStepSelect = (stepKey: string) => {
+    setSelectedBadStep(stepKey);
+    setDropdownOpen(false);
+    openCamera(stepKey as "missingTie" | "missingBelt" | "missingIdCard");
+  };
+
+  const getNextUnfinishedBadStep = () => {
+    return BAD_UNIFORM_STEPS.find(s => !badUniformPhotos[s.key]);
+  };
 
   return (
     <div className="space-y-4">
@@ -195,11 +174,13 @@ const UniformUploadSection = ({
         </p>
       </div>
 
-      {/* Camera View */}
+      {/* Camera View (shared for good & bad uniform) */}
       {cameraTarget && (
         <div className="animate-fade-in space-y-3">
           <p className="text-center text-xs font-medium text-foreground">
-            {cameraTarget === "good" ? "Capture Proper Uniform" : "Capture Improper Uniform"}
+            {cameraTarget === "good"
+              ? "Capture Proper Uniform"
+              : `Capture: ${BAD_UNIFORM_STEPS.find(s => s.key === cameraTarget)?.label}`}
           </p>
           <div className="relative overflow-hidden rounded-xl border bg-black shadow-sm">
             {cameraLoading && (
@@ -208,13 +189,16 @@ const UniformUploadSection = ({
               </div>
             )}
             <video ref={videoRef} autoPlay playsInline muted className="w-full" />
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-4 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
-              Stand back to show full body
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-4 py-1.5 text-xs font-medium text-white backdrop-blur-sm text-center max-w-[90%]">
+              {getCameraInstruction()}
             </div>
           </div>
           <div className="flex gap-2">
             <Button type="button" onClick={capturePhoto} className="flex-1 gap-2">
               <Camera className="h-4 w-4" /> Capture
+            </Button>
+            <Button type="button" variant="outline" size="icon" onClick={switchCamera} title="Switch Camera">
+              <SwitchCamera className="h-4 w-4" />
             </Button>
             <Button type="button" variant="outline" onClick={stopCamera}>
               Cancel
@@ -224,21 +208,161 @@ const UniformUploadSection = ({
       )}
 
       {!cameraTarget && (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-          {renderCard(
-            "good", goodUniform, onGoodUniformChange, goodRef,
-            "Proper Uniform Photo",
-            "Full body with shirt, tie, ID card & complete dress",
-            "bg-green-500/90",
-            errors?.goodUniform
-          )}
-          {renderCard(
-            "bad", badUniform, onBadUniformChange, badRef,
-            "Improper Uniform Photo",
-            "Missing tie, ID card, or partial uniform",
-            "bg-amber-500/90",
-            errors?.badUniform
-          )}
+        <div className="space-y-6">
+          {/* ── Good Uniform Section ── */}
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-foreground">Proper Uniform Photo</label>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Student must wear full complete uniform (shirt, tie, belt, ID card & complete dress)
+            </p>
+            {goodUniform ? (
+              <div className="group relative">
+                <img
+                  src={goodUniform}
+                  alt="Proper Uniform"
+                  className="aspect-[3/4] w-full rounded-lg border object-cover shadow-sm"
+                />
+                <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-green-500/90 px-2 py-0.5 text-[10px] font-medium text-white">
+                  <CheckCircle className="h-3 w-3" /> Uploaded
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onGoodUniformChange(null)}
+                  className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white opacity-100 sm:opacity-0 transition-opacity group-hover:opacity-100"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div
+                className={`flex aspect-[3/4] w-full flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed transition-colors ${
+                  errors?.goodUniform ? "border-destructive" : "border-muted"
+                }`}
+              >
+                <Upload className="h-6 w-6 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground text-center px-2">Capture or upload a full body photo in complete uniform</span>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs h-8"
+                    onClick={() => openCamera("good")}
+                  >
+                    <Camera className="h-3.5 w-3.5" /> Capture
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs h-8"
+                    onClick={() => goodRef.current?.click()}
+                  >
+                    <Upload className="h-3.5 w-3.5" /> Upload
+                  </Button>
+                </div>
+              </div>
+            )}
+            <input
+              ref={goodRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleUpload(e, onGoodUniformChange, "Proper Uniform")}
+            />
+            {errors?.goodUniform && <p className="text-xs text-destructive">{errors.goodUniform}</p>}
+          </div>
+
+          {/* ── Bad Uniform Section (Multi-Step) ── */}
+          <div className="space-y-3">
+            <label className="text-xs font-medium text-foreground">Improper Uniform Photos</label>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Capture photos for each missing uniform item. Select an item below, then take the photo.
+            </p>
+
+            {/* Step indicators */}
+            <div className="grid grid-cols-3 gap-2">
+              {BAD_UNIFORM_STEPS.map((step) => {
+                const photo = badUniformPhotos[step.key];
+                return (
+                  <div key={step.key} className="space-y-1.5">
+                    <div
+                      className={`group relative flex aspect-[3/4] w-full flex-col items-center justify-center rounded-lg border transition-colors ${
+                        photo ? "border-amber-400" : "border-2 border-dashed border-muted bg-muted/30"
+                      }`}
+                    >
+                      {photo ? (
+                        <>
+                          <img src={photo} alt={step.label} className="h-full w-full rounded-lg object-cover" />
+                          <div className="absolute left-1 top-1 flex items-center gap-0.5 rounded-full bg-amber-500/90 px-1.5 py-0.5 text-[9px] font-medium text-white">
+                            <CheckCircle className="h-2.5 w-2.5" /> Done
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => onBadUniformPhotosChange({ ...badUniformPhotos, [step.key]: null })}
+                            className="absolute right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-white opacity-100 sm:opacity-0 transition-opacity group-hover:opacity-100"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleBadStepSelect(step.key)}
+                          className="flex flex-col items-center gap-1.5 p-2"
+                        >
+                          <Camera className="h-5 w-5 text-muted-foreground" />
+                          <span className="text-[10px] text-muted-foreground text-center leading-tight">{step.label}</span>
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-center text-muted-foreground truncate">{step.label}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Dropdown to select & capture */}
+            {!allBadDone && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex w-full items-center justify-between rounded-lg border bg-background px-3 py-2.5 text-sm text-foreground hover:bg-muted/50 transition-colors"
+                >
+                  <span className="text-muted-foreground">
+                    {selectedBadStep
+                      ? `Selected: ${BAD_UNIFORM_STEPS.find(s => s.key === selectedBadStep)?.label}`
+                      : "Select missing item to capture…"}
+                  </span>
+                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+                </button>
+                {dropdownOpen && (
+                  <div className="absolute z-10 mt-1 w-full rounded-lg border bg-background shadow-lg animate-fade-in">
+                    {BAD_UNIFORM_STEPS.filter(s => !badUniformPhotos[s.key]).map((step) => (
+                      <button
+                        key={step.key}
+                        type="button"
+                        onClick={() => handleBadStepSelect(step.key)}
+                        className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-foreground hover:bg-muted/50 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                      >
+                        <Camera className="h-3.5 w-3.5 text-muted-foreground" />
+                        {step.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {allBadDone && (
+              <div className="flex items-center gap-1.5 text-xs text-amber-600">
+                <CheckCircle className="h-3.5 w-3.5" /> All improper uniform photos captured
+              </div>
+            )}
+
+            {errors?.badUniform && <p className="text-xs text-destructive">{errors.badUniform}</p>}
+          </div>
         </div>
       )}
     </div>

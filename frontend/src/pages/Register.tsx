@@ -2,7 +2,7 @@ import { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import MultiFaceCapture from "@/components/MultiFaceCapture";
-import UniformUploadSection from "@/components/UniformUploadSection";
+import UniformUploadSection, { BadUniformPhotos } from "@/components/UniformUploadSection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -27,7 +27,11 @@ const Register = () => {
   const [schoolName, setSchoolName] = useState("");
   const [photos, setPhotos] = useState<(string | null)[]>(Array(6).fill(null));
   const [goodUniform, setGoodUniform] = useState<string | null>(null);
-  const [badUniform, setBadUniform] = useState<string | null>(null);
+  const [badUniformPhotos, setBadUniformPhotos] = useState<BadUniformPhotos>({
+    missingTie: null,
+    missingBelt: null,
+    missingIdCard: null,
+  });
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -41,7 +45,8 @@ const Register = () => {
     else if (schoolName.trim().length > 150) newErrors.schoolName = "School name must be under 150 characters.";
     if (!photos.every(Boolean)) newErrors.photos = "All 6 face images are required.";
     if (!goodUniform) newErrors.goodUniform = "Proper uniform photo is required.";
-    if (!badUniform) newErrors.badUniform = "Improper uniform photo is required.";
+    if (!badUniformPhotos.missingTie || !badUniformPhotos.missingBelt || !badUniformPhotos.missingIdCard)
+      newErrors.badUniform = "All 3 improper uniform photos are required (missing tie, belt, and ID card).";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -59,9 +64,13 @@ const Register = () => {
         studentName,
         rollNumber,
         schoolName,
-        photos: photos as string[], // Already validated as all 6 strings
+        photos: photos as string[],
         goodUniform: goodUniform as string,
-        badUniform: badUniform as string,
+        badUniformPhotos: {
+          missingTie: badUniformPhotos.missingTie as string,
+          missingBelt: badUniformPhotos.missingBelt as string,
+          missingIdCard: badUniformPhotos.missingIdCard as string,
+        },
       });
 
       toast.success("Student registered successfully!", {
@@ -83,7 +92,7 @@ const Register = () => {
     setSchoolName("");
     setPhotos(Array(6).fill(null));
     setGoodUniform(null);
-    setBadUniform(null);
+    setBadUniformPhotos({ missingTie: null, missingBelt: null, missingIdCard: null });
     setErrors({});
   };
 
@@ -169,9 +178,9 @@ const Register = () => {
               {/* Uniform Verification */}
               <UniformUploadSection
                 goodUniform={goodUniform}
-                badUniform={badUniform}
+                badUniformPhotos={badUniformPhotos}
                 onGoodUniformChange={(img) => { setGoodUniform(img); setErrors((e) => ({ ...e, goodUniform: undefined })); }}
-                onBadUniformChange={(img) => { setBadUniform(img); setErrors((e) => ({ ...e, badUniform: undefined })); }}
+                onBadUniformPhotosChange={(photos) => { setBadUniformPhotos(photos); setErrors((e) => ({ ...e, badUniform: undefined })); }}
                 errors={{ goodUniform: errors.goodUniform, badUniform: errors.badUniform }}
               />
 

@@ -6,7 +6,11 @@ export interface StudentRegistrationData {
   schoolName: string;
   photos: string[];
   goodUniform: string;
-  badUniform: string;
+  badUniformPhotos: {
+    missingTie: string;
+    missingBelt: string;
+    missingIdCard: string;
+  };
 }
 
 export const registerStudent = async (data: StudentRegistrationData) => {
@@ -22,7 +26,9 @@ export const registerStudent = async (data: StudentRegistrationData) => {
         schoolName: data.schoolName,
         photos: data.photos,
         goodUniform: data.goodUniform,
-        badUniform: data.badUniform,
+        badUniformMissingTie: data.badUniformPhotos.missingTie,
+        badUniformMissingBelt: data.badUniformPhotos.missingBelt,
+        badUniformMissingIdCard: data.badUniformPhotos.missingIdCard,
       }),
     });
 

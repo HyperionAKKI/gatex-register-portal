@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, RotateCcw, Check, Loader2, Upload, X } from "lucide-react";
+import { Camera, RotateCcw, Check, Loader2, Upload, X, SwitchCamera } from "lucide-react";
 import { toast } from "sonner";
 import FaceAlignmentOverlay from "./FaceAlignmentOverlay";
 
@@ -24,6 +24,7 @@ const MultiFaceCapture = ({ photos, onPhotosChange }: MultiFaceCaptureProps) => 
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isFaceAligned, setIsFaceAligned] = useState(false);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -47,13 +48,14 @@ const MultiFaceCapture = ({ photos, onPhotosChange }: MultiFaceCaptureProps) => 
     }
   }, [isCameraOpen]);
 
-  const startCamera = useCallback(async (step: number) => {
+  const startCamera = useCallback(async (step: number, mode?: "user" | "environment") => {
     setCurrentStep(step);
     setIsLoading(true);
     setIsFaceAligned(false);
+    const useMode = mode || facingMode;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+        video: { facingMode: useMode, width: { ideal: 640 }, height: { ideal: 480 } },
       });
       streamRef.current = stream;
       setIsCameraOpen(true);
@@ -62,7 +64,19 @@ const MultiFaceCapture = ({ photos, onPhotosChange }: MultiFaceCaptureProps) => 
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [facingMode]);
+
+  const switchCamera = useCallback(() => {
+    const newMode = facingMode === "user" ? "environment" : "user";
+    setFacingMode(newMode);
+    if (isCameraOpen) {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+      setIsCameraOpen(false);
+      // Small delay then restart with new mode
+      setTimeout(() => startCamera(currentStep, newMode), 100);
+    }
+  }, [facingMode, isCameraOpen, currentStep, startCamera]);
 
   const capturePhoto = useCallback(() => {
     if (!videoRef.current) return;
@@ -228,6 +242,9 @@ const MultiFaceCapture = ({ photos, onPhotosChange }: MultiFaceCaptureProps) => 
             >
               <Camera className="h-4 w-4" />
               {isFaceAligned ? "Capture" : "Align face to capture"}
+            </Button>
+            <Button type="button" variant="outline" size="icon" onClick={switchCamera} title="Switch Camera">
+              <SwitchCamera className="h-4 w-4" />
             </Button>
             <Button type="button" variant="outline" onClick={stopCamera}>
               Cancel

@@ -43,7 +43,7 @@ public class StudentService {
             images.add(img);
         }
 
-        // Process Uniform Photos
+        // Process Good Uniform Photo
         String goodUrl = cloudinaryService.uploadBase64Image(request.getGoodUniform());
         Image goodUniform = new Image();
         goodUniform.setStudent(student);
@@ -51,12 +51,27 @@ public class StudentService {
         goodUniform.setImageUrl(goodUrl);
         images.add(goodUniform);
 
-        String badUrl = cloudinaryService.uploadBase64Image(request.getBadUniform());
-        Image badUniform = new Image();
-        badUniform.setStudent(student);
-        badUniform.setImageType(ImageType.UNIFORM_BAD);
-        badUniform.setImageUrl(badUrl);
-        images.add(badUniform);
+        // Process Bad Uniform Photos (Missing Tie, Belt, ID Card)
+        String missingTieUrl = cloudinaryService.uploadBase64Image(request.getBadUniformMissingTie());
+        Image missingTieImg = new Image();
+        missingTieImg.setStudent(student);
+        missingTieImg.setImageType(ImageType.UNIFORM_BAD_MISSING_TIE);
+        missingTieImg.setImageUrl(missingTieUrl);
+        images.add(missingTieImg);
+
+        String missingBeltUrl = cloudinaryService.uploadBase64Image(request.getBadUniformMissingBelt());
+        Image missingBeltImg = new Image();
+        missingBeltImg.setStudent(student);
+        missingBeltImg.setImageType(ImageType.UNIFORM_BAD_MISSING_BELT);
+        missingBeltImg.setImageUrl(missingBeltUrl);
+        images.add(missingBeltImg);
+
+        String missingIdCardUrl = cloudinaryService.uploadBase64Image(request.getBadUniformMissingIdCard());
+        Image missingIdCardImg = new Image();
+        missingIdCardImg.setStudent(student);
+        missingIdCardImg.setImageType(ImageType.UNIFORM_BAD_MISSING_ID_CARD);
+        missingIdCardImg.setImageUrl(missingIdCardUrl);
+        images.add(missingIdCardImg);
 
         student.setImages(images);
         return studentRepository.save(student);
