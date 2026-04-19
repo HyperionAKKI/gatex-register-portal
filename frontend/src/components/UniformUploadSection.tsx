@@ -7,12 +7,14 @@ export interface BadUniformPhotos {
   missingTie: string | null;
   missingBelt: string | null;
   missingIdCard: string | null;
+  other: string | null;
 }
 
 const BAD_UNIFORM_STEPS = [
   { key: "missingTie" as const, label: "Missing Tie", instruction: "Take a full-body photo showing the student WITHOUT a tie" },
   { key: "missingBelt" as const, label: "Missing Belt", instruction: "Take a full-body photo showing the student WITHOUT a belt" },
   { key: "missingIdCard" as const, label: "Missing ID Card", instruction: "Take a full-body photo showing the student WITHOUT an ID card" },
+  { key: "other" as const, label: "Other", instruction: "Take a full-body photo showing any other uniform violation" },
 ];
 
 interface UniformUploadSectionProps {
@@ -35,7 +37,7 @@ const UniformUploadSection = ({
   const streamRef = useRef<MediaStream | null>(null);
 
   // Camera state
-  const [cameraTarget, setCameraTarget] = useState<"good" | "missingTie" | "missingBelt" | "missingIdCard" | null>(null);
+  const [cameraTarget, setCameraTarget] = useState<"good" | "missingTie" | "missingBelt" | "missingIdCard" | "other" | null>(null);
   const [cameraLoading, setCameraLoading] = useState(false);
   const [streamReady, setStreamReady] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
@@ -62,7 +64,7 @@ const UniformUploadSection = ({
     }
   }, [streamReady, cameraTarget]);
 
-  const openCamera = useCallback(async (target: "good" | "missingTie" | "missingBelt" | "missingIdCard", mode?: "user" | "environment") => {
+  const openCamera = useCallback(async (target: "good" | "missingTie" | "missingBelt" | "missingIdCard" | "other", mode?: "user" | "environment") => {
     setCameraLoading(true);
     setCameraTarget(target);
     setStreamReady(false);
@@ -150,13 +152,13 @@ const UniformUploadSection = ({
     return step?.instruction || "Stand back to show full body";
   };
 
-  const badPhotosCompleted = [badUniformPhotos.missingTie, badUniformPhotos.missingBelt, badUniformPhotos.missingIdCard].filter(Boolean).length;
-  const allBadDone = badPhotosCompleted === 3;
+  const badPhotosCompleted = [badUniformPhotos.missingTie, badUniformPhotos.missingBelt, badUniformPhotos.missingIdCard, badUniformPhotos.other].filter(Boolean).length;
+  const allBadDone = badPhotosCompleted === 4;
 
   const handleBadStepSelect = (stepKey: string) => {
     setSelectedBadStep(stepKey);
     setDropdownOpen(false);
-    openCamera(stepKey as "missingTie" | "missingBelt" | "missingIdCard");
+    openCamera(stepKey as "missingTie" | "missingBelt" | "missingIdCard" | "other");
   };
 
   const getNextUnfinishedBadStep = () => {
@@ -277,11 +279,17 @@ const UniformUploadSection = ({
           <div className="space-y-3">
             <label className="text-xs font-medium text-foreground">Improper Uniform Photos</label>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Capture photos for each missing uniform item. Select an item below, then take the photo.
+              Capture photos for each missing uniform item. Select an item below, then take the photo. Minimum 2 photos are required.
             </p>
 
+            {badPhotosCompleted >= 2 && badPhotosCompleted < 4 && (
+              <div className="flex items-center gap-1.5 text-xs text-amber-600 mb-2">
+                <CheckCircle className="h-3.5 w-3.5" /> Minimum 2 photos captured. You can submit or capture more.
+              </div>
+            )}
+
             {/* Step indicators */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {BAD_UNIFORM_STEPS.map((step) => {
                 const photo = badUniformPhotos[step.key];
                 return (

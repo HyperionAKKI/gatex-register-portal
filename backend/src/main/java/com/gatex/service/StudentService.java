@@ -35,7 +35,7 @@ public class StudentService {
         };
         
         for (int i = 0; i < request.getPhotos().size(); i++) {
-            String url = cloudinaryService.uploadBase64Image(request.getPhotos().get(i));
+            String url = cloudinaryService.uploadBase64Image(request.getPhotos().get(i), "face");
             Image img = new Image();
             img.setStudent(student);
             img.setImageType(faceTypes[i]);
@@ -44,34 +44,49 @@ public class StudentService {
         }
 
         // Process Good Uniform Photo
-        String goodUrl = cloudinaryService.uploadBase64Image(request.getGoodUniform());
+        String goodUrl = cloudinaryService.uploadBase64Image(request.getGoodUniform(), "good_uniform");
         Image goodUniform = new Image();
         goodUniform.setStudent(student);
         goodUniform.setImageType(ImageType.UNIFORM_GOOD);
         goodUniform.setImageUrl(goodUrl);
         images.add(goodUniform);
 
-        // Process Bad Uniform Photos (Missing Tie, Belt, ID Card)
-        String missingTieUrl = cloudinaryService.uploadBase64Image(request.getBadUniformMissingTie());
-        Image missingTieImg = new Image();
-        missingTieImg.setStudent(student);
-        missingTieImg.setImageType(ImageType.UNIFORM_BAD_MISSING_TIE);
-        missingTieImg.setImageUrl(missingTieUrl);
-        images.add(missingTieImg);
+        // Process Bad Uniform Photos (Missing Tie, Belt, ID Card, Other)
+        if (request.getBadUniformMissingTie() != null && !request.getBadUniformMissingTie().isEmpty()) {
+            String missingTieUrl = cloudinaryService.uploadBase64Image(request.getBadUniformMissingTie(), "bad_uniform");
+            Image missingTieImg = new Image();
+            missingTieImg.setStudent(student);
+            missingTieImg.setImageType(ImageType.UNIFORM_BAD_MISSING_TIE);
+            missingTieImg.setImageUrl(missingTieUrl);
+            images.add(missingTieImg);
+        }
 
-        String missingBeltUrl = cloudinaryService.uploadBase64Image(request.getBadUniformMissingBelt());
-        Image missingBeltImg = new Image();
-        missingBeltImg.setStudent(student);
-        missingBeltImg.setImageType(ImageType.UNIFORM_BAD_MISSING_BELT);
-        missingBeltImg.setImageUrl(missingBeltUrl);
-        images.add(missingBeltImg);
+        if (request.getBadUniformMissingBelt() != null && !request.getBadUniformMissingBelt().isEmpty()) {
+            String missingBeltUrl = cloudinaryService.uploadBase64Image(request.getBadUniformMissingBelt(), "bad_uniform");
+            Image missingBeltImg = new Image();
+            missingBeltImg.setStudent(student);
+            missingBeltImg.setImageType(ImageType.UNIFORM_BAD_MISSING_BELT);
+            missingBeltImg.setImageUrl(missingBeltUrl);
+            images.add(missingBeltImg);
+        }
 
-        String missingIdCardUrl = cloudinaryService.uploadBase64Image(request.getBadUniformMissingIdCard());
-        Image missingIdCardImg = new Image();
-        missingIdCardImg.setStudent(student);
-        missingIdCardImg.setImageType(ImageType.UNIFORM_BAD_MISSING_ID_CARD);
-        missingIdCardImg.setImageUrl(missingIdCardUrl);
-        images.add(missingIdCardImg);
+        if (request.getBadUniformMissingIdCard() != null && !request.getBadUniformMissingIdCard().isEmpty()) {
+            String missingIdCardUrl = cloudinaryService.uploadBase64Image(request.getBadUniformMissingIdCard(), "bad_uniform");
+            Image missingIdCardImg = new Image();
+            missingIdCardImg.setStudent(student);
+            missingIdCardImg.setImageType(ImageType.UNIFORM_BAD_MISSING_ID_CARD);
+            missingIdCardImg.setImageUrl(missingIdCardUrl);
+            images.add(missingIdCardImg);
+        }
+
+        if (request.getBadUniformOther() != null && !request.getBadUniformOther().isEmpty()) {
+            String otherUrl = cloudinaryService.uploadBase64Image(request.getBadUniformOther(), "bad_uniform");
+            Image otherImg = new Image();
+            otherImg.setStudent(student);
+            otherImg.setImageType(ImageType.UNIFORM_BAD_OTHER);
+            otherImg.setImageUrl(otherUrl);
+            images.add(otherImg);
+        }
 
         student.setImages(images);
         return studentRepository.save(student);

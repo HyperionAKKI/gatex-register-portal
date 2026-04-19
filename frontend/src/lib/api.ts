@@ -7,9 +7,10 @@ export interface StudentRegistrationData {
   photos: string[];
   goodUniform: string;
   badUniformPhotos: {
-    missingTie: string;
-    missingBelt: string;
-    missingIdCard: string;
+    missingTie: string | null;
+    missingBelt: string | null;
+    missingIdCard: string | null;
+    other: string | null;
   };
 }
 
@@ -29,6 +30,7 @@ export const registerStudent = async (data: StudentRegistrationData) => {
         badUniformMissingTie: data.badUniformPhotos.missingTie,
         badUniformMissingBelt: data.badUniformPhotos.missingBelt,
         badUniformMissingIdCard: data.badUniformPhotos.missingIdCard,
+        badUniformOther: data.badUniformPhotos.other,
       }),
     });
 

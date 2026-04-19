@@ -23,12 +23,16 @@ public class CloudinaryService {
     }
 
     public String uploadBase64Image(String base64Image) {
+        return uploadBase64Image(base64Image, "sample");
+    }
+
+    public String uploadBase64Image(String base64Image, String folder) {
         try {
             // Check if it has a prefix and remove it
             if (base64Image.startsWith("data:image")) {
                 base64Image = base64Image.substring(base64Image.indexOf(",") + 1);
             }
-            Map uploadResult = cloudinary.uploader().upload("data:image/jpeg;base64," + base64Image, ObjectUtils.emptyMap());
+            Map uploadResult = cloudinary.uploader().upload("data:image/jpeg;base64," + base64Image, ObjectUtils.asMap("folder", folder));
             return uploadResult.get("url").toString();
         } catch (Exception e) {
             System.err.println("Cloudinary error: " + e.getMessage());

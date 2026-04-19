@@ -24,12 +24,11 @@ public class StudentRegistrationRequest {
     @NotBlank(message = "Proper uniform photo is required")
     private String goodUniform; // Base64 string
 
-    @NotBlank(message = "Missing tie uniform photo is required")
     private String badUniformMissingTie; // Base64 string
 
-    @NotBlank(message = "Missing belt uniform photo is required")
     private String badUniformMissingBelt; // Base64 string
 
-    @NotBlank(message = "Missing ID card uniform photo is required")
     private String badUniformMissingIdCard; // Base64 string
+
+    private String badUniformOther; // Base64 string
 }

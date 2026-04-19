@@ -31,6 +31,7 @@ const Register = () => {
     missingTie: null,
     missingBelt: null,
     missingIdCard: null,
+    other: null,
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,8 +46,9 @@ const Register = () => {
     else if (schoolName.trim().length > 150) newErrors.schoolName = "School name must be under 150 characters.";
     if (!photos.every(Boolean)) newErrors.photos = "All 6 face images are required.";
     if (!goodUniform) newErrors.goodUniform = "Proper uniform photo is required.";
-    if (!badUniformPhotos.missingTie || !badUniformPhotos.missingBelt || !badUniformPhotos.missingIdCard)
-      newErrors.badUniform = "All 3 improper uniform photos are required (missing tie, belt, and ID card).";
+    const badPhotosCount = Object.values(badUniformPhotos).filter(Boolean).length;
+    if (badPhotosCount < 2)
+      newErrors.badUniform = "Please capture at least 2 improper uniform photos.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -70,6 +72,7 @@ const Register = () => {
           missingTie: badUniformPhotos.missingTie as string,
           missingBelt: badUniformPhotos.missingBelt as string,
           missingIdCard: badUniformPhotos.missingIdCard as string,
+          other: badUniformPhotos.other as string,
         },
       });
 
@@ -92,7 +95,7 @@ const Register = () => {
     setSchoolName("");
     setPhotos(Array(6).fill(null));
     setGoodUniform(null);
-    setBadUniformPhotos({ missingTie: null, missingBelt: null, missingIdCard: null });
+    setBadUniformPhotos({ missingTie: null, missingBelt: null, missingIdCard: null, other: null });
     setErrors({});
   };
 
