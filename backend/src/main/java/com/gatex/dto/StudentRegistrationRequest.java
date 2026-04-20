@@ -21,8 +21,9 @@ public class StudentRegistrationRequest {
     @Size(min = 6, max = 6, message = "Exactly 6 face photos are required")
     private List<String> photos; // Base64 strings
 
-    @NotBlank(message = "Proper uniform photo is required")
     private String goodUniform; // Base64 string
+
+    private String sportsUniform; // Base64 string
 
     private String badUniformMissingTie; // Base64 string
 

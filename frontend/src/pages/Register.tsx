@@ -27,6 +27,7 @@ const Register = () => {
   const [schoolName, setSchoolName] = useState("");
   const [photos, setPhotos] = useState<(string | null)[]>(Array(6).fill(null));
   const [goodUniform, setGoodUniform] = useState<string | null>(null);
+  const [sportsUniform, setSportsUniform] = useState<string | null>(null);
   const [badUniformPhotos, setBadUniformPhotos] = useState<BadUniformPhotos>({
     missingTie: null,
     missingBelt: null,
@@ -45,7 +46,7 @@ const Register = () => {
     if (!schoolName.trim()) newErrors.schoolName = "School name is required.";
     else if (schoolName.trim().length > 150) newErrors.schoolName = "School name must be under 150 characters.";
     if (!photos.every(Boolean)) newErrors.photos = "All 6 face images are required.";
-    if (!goodUniform) newErrors.goodUniform = "Proper uniform photo is required.";
+    if (!goodUniform && !sportsUniform) newErrors.goodUniform = "At least one uniform photo (Regular or Sports) is required.";
     const badPhotosCount = Object.values(badUniformPhotos).filter(Boolean).length;
     if (badPhotosCount < 2)
       newErrors.badUniform = "Please capture at least 2 improper uniform photos.";
@@ -68,6 +69,7 @@ const Register = () => {
         schoolName,
         photos: photos as string[],
         goodUniform: goodUniform as string,
+        sportsUniform: sportsUniform as string,
         badUniformPhotos: {
           missingTie: badUniformPhotos.missingTie as string,
           missingBelt: badUniformPhotos.missingBelt as string,
@@ -95,6 +97,7 @@ const Register = () => {
     setSchoolName("");
     setPhotos(Array(6).fill(null));
     setGoodUniform(null);
+    setSportsUniform(null);
     setBadUniformPhotos({ missingTie: null, missingBelt: null, missingIdCard: null, other: null });
     setErrors({});
   };
@@ -181,8 +184,10 @@ const Register = () => {
               {/* Uniform Verification */}
               <UniformUploadSection
                 goodUniform={goodUniform}
+                sportsUniform={sportsUniform}
                 badUniformPhotos={badUniformPhotos}
                 onGoodUniformChange={(img) => { setGoodUniform(img); setErrors((e) => ({ ...e, goodUniform: undefined })); }}
+                onSportsUniformChange={(img) => { setSportsUniform(img); setErrors((e) => ({ ...e, goodUniform: undefined })); }}
                 onBadUniformPhotosChange={(photos) => { setBadUniformPhotos(photos); setErrors((e) => ({ ...e, badUniform: undefined })); }}
                 errors={{ goodUniform: errors.goodUniform, badUniform: errors.badUniform }}
               />

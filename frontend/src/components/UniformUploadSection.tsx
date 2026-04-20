@@ -19,25 +19,30 @@ const BAD_UNIFORM_STEPS = [
 
 interface UniformUploadSectionProps {
   goodUniform: string | null;
+  sportsUniform: string | null;
   badUniformPhotos: BadUniformPhotos;
   onGoodUniformChange: (img: string | null) => void;
+  onSportsUniformChange: (img: string | null) => void;
   onBadUniformPhotosChange: (photos: BadUniformPhotos) => void;
   errors?: { goodUniform?: string; badUniform?: string };
 }
 
 const UniformUploadSection = ({
   goodUniform,
+  sportsUniform,
   badUniformPhotos,
   onGoodUniformChange,
+  onSportsUniformChange,
   onBadUniformPhotosChange,
   errors,
 }: UniformUploadSectionProps) => {
   const goodRef = useRef<HTMLInputElement>(null);
+  const sportsRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   // Camera state
-  const [cameraTarget, setCameraTarget] = useState<"good" | "missingTie" | "missingBelt" | "missingIdCard" | "other" | null>(null);
+  const [cameraTarget, setCameraTarget] = useState<"good" | "sports" | "missingTie" | "missingBelt" | "missingIdCard" | "other" | null>(null);
   const [cameraLoading, setCameraLoading] = useState(false);
   const [streamReady, setStreamReady] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
@@ -64,7 +69,7 @@ const UniformUploadSection = ({
     }
   }, [streamReady, cameraTarget]);
 
-  const openCamera = useCallback(async (target: "good" | "missingTie" | "missingBelt" | "missingIdCard" | "other", mode?: "user" | "environment") => {
+  const openCamera = useCallback(async (target: "good" | "sports" | "missingTie" | "missingBelt" | "missingIdCard" | "other", mode?: "user" | "environment") => {
     setCameraLoading(true);
     setCameraTarget(target);
     setStreamReady(false);
@@ -112,6 +117,9 @@ const UniformUploadSection = ({
     if (cameraTarget === "good") {
       onGoodUniformChange(dataUrl);
       toast.success("Proper uniform photo captured!");
+    } else if (cameraTarget === "sports") {
+      onSportsUniformChange(dataUrl);
+      toast.success("Sports uniform photo captured!");
     } else {
       // It's one of the bad uniform steps
       const updatedPhotos = { ...badUniformPhotos, [cameraTarget]: dataUrl };
@@ -147,7 +155,8 @@ const UniformUploadSection = ({
   };
 
   const getCameraInstruction = () => {
-    if (cameraTarget === "good") return "Stand back to show full body in complete uniform";
+    if (cameraTarget === "good") return "Stand back to show full body in regular uniform";
+    if (cameraTarget === "sports") return "Stand back to show full body in sports uniform";
     const step = BAD_UNIFORM_STEPS.find(s => s.key === cameraTarget);
     return step?.instruction || "Stand back to show full body";
   };
@@ -182,6 +191,8 @@ const UniformUploadSection = ({
           <p className="text-center text-xs font-medium text-foreground">
             {cameraTarget === "good"
               ? "Capture Proper Uniform"
+              : cameraTarget === "sports"
+              ? "Capture Sports Uniform"
               : `Capture: ${BAD_UNIFORM_STEPS.find(s => s.key === cameraTarget)?.label}`}
           </p>
           <div className="relative overflow-hidden rounded-xl border bg-black shadow-sm">
@@ -211,69 +222,133 @@ const UniformUploadSection = ({
 
       {!cameraTarget && (
         <div className="space-y-6">
-          {/* ── Good Uniform Section ── */}
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-foreground">Proper Uniform Photo</label>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Student must wear full complete uniform (shirt, tie, belt, ID card & complete dress)
-            </p>
-            {goodUniform ? (
-              <div className="group relative">
-                <img
-                  src={goodUniform}
-                  alt="Proper Uniform"
-                  className="aspect-[3/4] w-full rounded-lg border object-cover shadow-sm"
-                />
-                <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-green-500/90 px-2 py-0.5 text-[10px] font-medium text-white">
-                  <CheckCircle className="h-3 w-3" /> Uploaded
+          {/* ── Proper Uniform Section ── */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-foreground">Regular Uniform Photo</label>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Full-body photo in complete regular school uniform
+              </p>
+              {goodUniform ? (
+                <div className="group relative">
+                  <img
+                    src={goodUniform}
+                    alt="Proper Uniform"
+                    className="aspect-[3/4] w-full rounded-lg border object-cover shadow-sm"
+                  />
+                  <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-green-500/90 px-2 py-0.5 text-[10px] font-medium text-white">
+                    <CheckCircle className="h-3 w-3" /> Uploaded
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onGoodUniformChange(null)}
+                    className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white opacity-100 sm:opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onGoodUniformChange(null)}
-                  className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white opacity-100 sm:opacity-0 transition-opacity group-hover:opacity-100"
+              ) : (
+                <div
+                  className={`flex aspect-[3/4] w-full flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed transition-colors ${
+                    errors?.goodUniform ? "border-destructive" : "border-muted"
+                  }`}
                 >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ) : (
-              <div
-                className={`flex aspect-[3/4] w-full flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed transition-colors ${
-                  errors?.goodUniform ? "border-destructive" : "border-muted"
-                }`}
-              >
-                <Upload className="h-6 w-6 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground text-center px-2">Capture or upload a full body photo in complete uniform</span>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 text-xs h-8"
-                    onClick={() => openCamera("good")}
-                  >
-                    <Camera className="h-3.5 w-3.5" /> Capture
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 text-xs h-8"
-                    onClick={() => goodRef.current?.click()}
-                  >
-                    <Upload className="h-3.5 w-3.5" /> Upload
-                  </Button>
+                  <Upload className="h-6 w-6 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground text-center px-2">Capture or upload regular uniform</span>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 text-xs h-8"
+                      onClick={() => openCamera("good")}
+                    >
+                      <Camera className="h-3.5 w-3.5" /> Capture
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 text-xs h-8"
+                      onClick={() => goodRef.current?.click()}
+                    >
+                      <Upload className="h-3.5 w-3.5" /> Upload
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
-            <input
-              ref={goodRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => handleUpload(e, onGoodUniformChange, "Proper Uniform")}
-            />
-            {errors?.goodUniform && <p className="text-xs text-destructive">{errors.goodUniform}</p>}
+              )}
+              <input
+                ref={goodRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleUpload(e, onGoodUniformChange, "Regular Uniform")}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-foreground">Sports Uniform Photo</label>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Full-body photo in complete sports uniform
+              </p>
+              {sportsUniform ? (
+                <div className="group relative">
+                  <img
+                    src={sportsUniform}
+                    alt="Sports Uniform"
+                    className="aspect-[3/4] w-full rounded-lg border object-cover shadow-sm"
+                  />
+                  <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-green-500/90 px-2 py-0.5 text-[10px] font-medium text-white">
+                    <CheckCircle className="h-3 w-3" /> Uploaded
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onSportsUniformChange(null)}
+                    className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white opacity-100 sm:opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className={`flex aspect-[3/4] w-full flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed transition-colors ${
+                    errors?.goodUniform ? "border-destructive" : "border-muted"
+                  }`}
+                >
+                  <Upload className="h-6 w-6 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground text-center px-2">Capture or upload sports uniform</span>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 text-xs h-8"
+                      onClick={() => openCamera("sports")}
+                    >
+                      <Camera className="h-3.5 w-3.5" /> Capture
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 text-xs h-8"
+                      onClick={() => sportsRef.current?.click()}
+                    >
+                      <Upload className="h-3.5 w-3.5" /> Upload
+                    </Button>
+                  </div>
+                </div>
+              )}
+              <input
+                ref={sportsRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleUpload(e, onSportsUniformChange, "Sports Uniform")}
+              />
+            </div>
           </div>
+          {errors?.goodUniform && <p className="text-xs text-destructive">{errors.goodUniform}</p>}
 
           {/* ── Bad Uniform Section (Multi-Step) ── */}
           <div className="space-y-3">

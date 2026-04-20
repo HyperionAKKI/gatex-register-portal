@@ -44,12 +44,24 @@ public class StudentService {
         }
 
         // Process Good Uniform Photo
-        String goodUrl = cloudinaryService.uploadBase64Image(request.getGoodUniform(), "good_uniform");
-        Image goodUniform = new Image();
-        goodUniform.setStudent(student);
-        goodUniform.setImageType(ImageType.UNIFORM_GOOD);
-        goodUniform.setImageUrl(goodUrl);
-        images.add(goodUniform);
+        if (request.getGoodUniform() != null && !request.getGoodUniform().isEmpty()) {
+            String goodUrl = cloudinaryService.uploadBase64Image(request.getGoodUniform(), "good_uniform");
+            Image goodUniform = new Image();
+            goodUniform.setStudent(student);
+            goodUniform.setImageType(ImageType.UNIFORM_GOOD);
+            goodUniform.setImageUrl(goodUrl);
+            images.add(goodUniform);
+        }
+
+        // Process Sports Uniform Photo
+        if (request.getSportsUniform() != null && !request.getSportsUniform().isEmpty()) {
+            String sportsUrl = cloudinaryService.uploadBase64Image(request.getSportsUniform(), "good_uniform");
+            Image sportsUniform = new Image();
+            sportsUniform.setStudent(student);
+            sportsUniform.setImageType(ImageType.UNIFORM_SPORTS);
+            sportsUniform.setImageUrl(sportsUrl);
+            images.add(sportsUniform);
+        }
 
         // Process Bad Uniform Photos (Missing Tie, Belt, ID Card, Other)
         if (request.getBadUniformMissingTie() != null && !request.getBadUniformMissingTie().isEmpty()) {
